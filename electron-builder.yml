@@ -1,5 +1,5 @@
-appId: com.electron.app
-productName: qady-router-uboot-stopper
+appId: com.alybadawy.qady.router-uboot-stopper
+productName: 'Qady Router U-Boot Stopper'
 directories:
   buildResources: build
 files:
@@ -40,6 +40,6 @@ appImage:
 npmRebuild: false
 publish:
   provider: generic
-  url: https://example.com/auto-updates
+  url: https://qady.alybadawy.com/auto-updates
 electronDownload:
   mirror: https://npmmirror.com/mirrors/electron/
