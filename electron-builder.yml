@@ -1,5 +1,5 @@
-appId: com.electron.app
-productName: qady-router-uboot-stopper
+appId: com.alybadawy.qady.router-uboot-stopper
+productName: 'qady-Router-U-Boot-Stopper'
 directories:
   buildResources: build
 files:
@@ -13,6 +13,10 @@ asarUnpack:
   - resources/**
 win:
   executableName: qady-router-uboot-stopper
+  target:
+    - target: nsis
+      arch: [x64]
+  icon: build/icon.ico
 nsis:
   artifactName: ${name}-${version}-setup.${ext}
   shortcutName: ${productName}
@@ -39,7 +43,9 @@ appImage:
   artifactName: ${name}-${version}.${ext}
 npmRebuild: false
 publish:
-  provider: generic
-  url: https://example.com/auto-updates
+  provider: github
+  owner: 'ab-clients'
+  repo: 'Qady-router-u-boot-stopper'
+  releaseType: 'release'
 electronDownload:
   mirror: https://npmmirror.com/mirrors/electron/

@@ -1,13 +1,22 @@
-import { app, shell, BrowserWindow, ipcMain } from 'electron'
+import { app, shell, BrowserWindow, ipcMain, dialog, MessageBoxOptions } from 'electron'
+import { autoUpdater } from 'electron-updater'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 
+let mainWindow: BrowserWindow | null = null
+
+autoUpdater.autoDownload = false
+autoUpdater.autoInstallOnAppQuit = false
+autoUpdater.fullChangelog = false
+
 function createWindow(): void {
   // Create the browser window.
-  const mainWindow = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 900,
     height: 670,
+    maximizable: false,
+    resizable: false,
     show: false,
     autoHideMenuBar: true,
     ...(process.platform === 'linux' ? { icon } : {}),
@@ -18,7 +27,8 @@ function createWindow(): void {
   })
 
   mainWindow.on('ready-to-show', () => {
-    mainWindow.show()
+    mainWindow?.show()
+    mainWindow?.focus()
   })
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
@@ -40,7 +50,7 @@ function createWindow(): void {
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
   // Set app user model id for windows
-  electronApp.setAppUserModelId('com.electron')
+  electronApp.setAppUserModelId('com.alybadawy.qady.router-uboot-stopper')
 
   // Default open or close DevTools by F12 in development
   // and ignore CommandOrControl + R in production.
@@ -53,6 +63,10 @@ app.whenReady().then(() => {
   ipcMain.on('ping', () => console.log('pong'))
 
   createWindow()
+
+  autoUpdater.forceDevUpdateConfig = true
+
+  autoUpdater.checkForUpdates()
 
   app.on('activate', function () {
     // On macOS it's common to re-create a window in the app when the
@@ -72,3 +86,48 @@ app.on('window-all-closed', () => {
 
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and require them here.
+
+autoUpdater.on('update-available', (info) => {
+  console.log('Update available')
+  const dialogOptions: MessageBoxOptions = {
+    type: 'info',
+    buttons: ['Update', 'Cancel'],
+    defaultId: 0,
+    title: 'Update available',
+    message: `A new version of the app is available. Do you want to update version ${info.version}?`,
+    detail: (info.releaseNotes as string) || ''
+  }
+  dialog.showMessageBox(dialogOptions).then(({ response }) => {
+    if (response === 0) {
+      autoUpdater.downloadUpdate()
+    }
+  })
+})
+
+autoUpdater.on('update-downloaded', (info) => {
+  console.log('Update downloaded')
+  const dialogOptions: MessageBoxOptions = {
+    type: 'info',
+    buttons: ['Restart', 'Later'],
+    defaultId: 0,
+    title: 'Update downloaded',
+    message: `The app has been updated to ${info.releaseName}. Do you want to restart now?`
+  }
+  dialog.showMessageBox(dialogOptions).then(({ response }) => {
+    if (response === 0) {
+      autoUpdater.quitAndInstall()
+    }
+  })
+})
+
+autoUpdater.on('error', () => {
+  dialog.showMessageBox({
+    type: 'error',
+    title: 'Error',
+    message: 'An error occurred while checking for updates.'
+  })
+})
+
+autoUpdater.on('checking-for-update', () => {
+  console.log('Checking for update')
+})

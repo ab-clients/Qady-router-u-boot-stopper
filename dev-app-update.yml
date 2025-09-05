@@ -1,3 +1,6 @@
-provider: generic
-url: https://example.com/auto-updates
+provider: github
+owner: 'ab-clients'
+repo: 'Qady-router-u-boot-stopper'
+releaseType: 'release'
 updaterCacheDirName: qady-router-uboot-stopper-updater
+forceDevUpdateConfig: true
