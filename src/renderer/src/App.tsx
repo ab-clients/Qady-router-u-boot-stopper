@@ -1,5 +1,5 @@
 import Versions from './components/Versions'
-import electronLogo from './assets/electron.svg'
+// import electronLogo from './assets/electron.svg'
 
 function App(): React.JSX.Element {
   const ipcHandle = () => {
@@ -12,7 +12,7 @@ function App(): React.JSX.Element {
 
   return (
     <>
-      <img alt="logo" className="logo" src={electronLogo} />
+      {/* <img alt="logo" className="logo" src={electronLogo} /> */}
       <div className="creator">Developed by Aly Badawy</div>
       <div className="">
         Qady Router U-Boot Stopper is an application that helps you to stop your router from going
@@ -22,7 +22,7 @@ function App(): React.JSX.Element {
       <div className="actions">
         <div className="action">
           <a target="_blank" rel="noreferrer" onClick={ipcHandle}>
-            Scan Serial Ports
+            Scan Serial Ports!!
           </a>
         </div>
       </div>
