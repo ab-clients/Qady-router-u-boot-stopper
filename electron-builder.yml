@@ -11,12 +11,17 @@ files:
   - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
 asarUnpack:
   - resources/**
+  - node_modules/@serialport/**
+  - node_modules/serialport/**
 win:
   executableName: qady-router-uboot-stopper
   target:
     - target: nsis
       arch: [x64]
   icon: build/icon.ico
+  extraFiles:
+    - from: node_modules/@serialport/bindings-cpp/prebuilds
+      to: prebuilds
 nsis:
   artifactName: ${name}-${version}-setup.${ext}
   shortcutName: ${productName}
@@ -42,6 +47,7 @@ linux:
 appImage:
   artifactName: ${name}-${version}.${ext}
 npmRebuild: false
+includeSubNodeModules: true
 publish:
   provider: github
   owner: 'ab-clients'

@@ -2,10 +2,21 @@ import { app, shell, BrowserWindow, ipcMain, dialog, MessageBoxOptions } from 'e
 import { autoUpdater } from 'electron-updater'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
-const { SerialPort } = require('serialport')
+import { SerialPort } from 'serialport'
 import icon from '../../resources/icon.png?asset'
 
 let mainWindow: BrowserWindow | null = null
+
+// Global error handling to prevent crashes
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error)
+  // Don't exit the process, just log the error
+})
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason)
+  // Don't exit the process, just log the error
+})
 
 autoUpdater.autoDownload = false
 autoUpdater.autoInstallOnAppQuit = false
@@ -23,13 +34,25 @@ function createWindow(): void {
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
-      sandbox: false
+      sandbox: false,
+      nodeIntegration: false,
+      contextIsolation: true
     }
   })
 
   mainWindow.on('ready-to-show', () => {
     mainWindow?.show()
     mainWindow?.focus()
+
+    // Open DevTools in development or if there's an error flag
+    if (is.dev || process.env.DEBUG_MODE === 'true') {
+      mainWindow?.webContents.openDevTools()
+    }
+  })
+
+  // Add error handling for the window
+  mainWindow.on('closed', () => {
+    mainWindow = null
   })
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
@@ -49,46 +72,62 @@ function createWindow(): void {
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
-app.whenReady().then(() => {
-  // Set app user model id for windows
-  electronApp.setAppUserModelId('com.alybadawy.qady.router-uboot-stopper')
+app
+  .whenReady()
+  .then(async () => {
+    try {
+      // Set app user model id for windows
+      electronApp.setAppUserModelId('com.alybadawy.qady.router-uboot-stopper')
 
-  // Default open or close DevTools by F12 in development
-  // and ignore CommandOrControl + R in production.
-  // see https://github.com/alex8088/electron-toolkit/tree/master/packages/utils
-  app.on('browser-window-created', (_, window) => {
-    optimizer.watchWindowShortcuts(window)
+      // Default open or close DevTools by F12 in development
+      // and ignore CommandOrControl + R in production.
+      // see https://github.com/alex8088/electron-toolkit/tree/master/packages/utils
+      app.on('browser-window-created', (_, window) => {
+        optimizer.watchWindowShortcuts(window)
+      })
+
+      // IPC test
+      ipcMain.on('ping', () => console.log('pong'))
+
+      ipcMain.handle('serial:list', async () => {
+        try {
+          const ports = await SerialPort.list()
+          // Normalize fields across platforms/versions
+          return ports.map((p: any) => ({
+            path: p.path || p.comName || p.port || '',
+            manufacturer: p.manufacturer || '',
+            serialNumber: p.serialNumber || '',
+            vendorId: p.vendorId || '',
+            productId: p.productId || '',
+            locationId: p.locationId || '',
+            pnpId: p.pnpId || ''
+          }))
+        } catch (error) {
+          console.error('Error listing serial ports:', error)
+          return []
+        }
+      })
+
+      createWindow()
+
+      autoUpdater.forceDevUpdateConfig = true
+
+      autoUpdater.checkForUpdates()
+
+      app.on('activate', function () {
+        // On macOS it's common to re-create a window in the app when the
+        // dock icon is clicked and there are no other windows open.
+        if (BrowserWindow.getAllWindows().length === 0) createWindow()
+      })
+    } catch (error) {
+      console.error('Error during app initialization:', error)
+      // Still try to create a window even if there's an error
+      createWindow()
+    }
   })
-
-  // IPC test
-  ipcMain.on('ping', () => console.log('pong'))
-
-  ipcMain.handle('serial:list', async () => {
-    const ports = await SerialPort.list()
-    // Normalize fields across platforms/versions
-    return ports.map((p) => ({
-      path: p.path || p.comName || p.port || '',
-      manufacturer: p.manufacturer || '',
-      serialNumber: p.serialNumber || '',
-      vendorId: p.vendorId || '',
-      productId: p.productId || '',
-      locationId: p.locationId || '',
-      pnpId: p.pnpId || ''
-    }))
+  .catch((error) => {
+    console.error('Failed to initialize app:', error)
   })
-
-  createWindow()
-
-  autoUpdater.forceDevUpdateConfig = true
-
-  autoUpdater.checkForUpdates()
-
-  app.on('activate', function () {
-    // On macOS it's common to re-create a window in the app when the
-    // dock icon is clicked and there are no other windows open.
-    if (BrowserWindow.getAllWindows().length === 0) createWindow()
-  })
-})
 
 // Quit when all windows are closed, except on macOS. There, it's common
 // for applications and their menu bar to stay active until the user quits
