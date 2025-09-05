@@ -2,6 +2,7 @@ import { app, shell, BrowserWindow, ipcMain, dialog, MessageBoxOptions } from 'e
 import { autoUpdater } from 'electron-updater'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
+const { SerialPort } = require('serialport')
 import icon from '../../resources/icon.png?asset'
 
 let mainWindow: BrowserWindow | null = null
@@ -61,6 +62,20 @@ app.whenReady().then(() => {
 
   // IPC test
   ipcMain.on('ping', () => console.log('pong'))
+
+  ipcMain.handle('serial:list', async () => {
+    const ports = await SerialPort.list()
+    // Normalize fields across platforms/versions
+    return ports.map((p) => ({
+      path: p.path || p.comName || p.port || '',
+      manufacturer: p.manufacturer || '',
+      serialNumber: p.serialNumber || '',
+      vendorId: p.vendorId || '',
+      productId: p.productId || '',
+      locationId: p.locationId || '',
+      pnpId: p.pnpId || ''
+    }))
+  })
 
   createWindow()
 

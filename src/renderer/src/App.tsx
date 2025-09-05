@@ -2,7 +2,13 @@ import Versions from './components/Versions'
 import electronLogo from './assets/electron.svg'
 
 function App(): React.JSX.Element {
-  const ipcHandle = (): void => window.electron.ipcRenderer.send('ping')
+  const ipcHandle = () => {
+    // @ts-ignore
+    window.serial.list().then((ports: any) => {
+      console.log(ports)
+      alert(JSON.stringify(ports, null, 2))
+    })
+  }
 
   return (
     <>
@@ -16,7 +22,7 @@ function App(): React.JSX.Element {
       <div className="actions">
         <div className="action">
           <a target="_blank" rel="noreferrer" onClick={ipcHandle}>
-            Send IPC
+            Scan Serial Ports
           </a>
         </div>
       </div>
